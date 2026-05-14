@@ -1,6 +1,7 @@
 const auth = require("express").Router();
 const db = require("../config/db")
 const bcrypt = require("bcrypt")
+const authMiddleware = require("../middleware/auth.middleware")
 
 // registration POST
 async function hashPassword(password) {
@@ -22,12 +23,14 @@ auth.post("/login", (req, res) => {
     db.query("SELECT * FROM users WHERE email = ?", [email], async (error, [result]) => {
         if (error) return res.status(500).json({ error })
         // verify if we have a user
-        if (!result) return res.status(404).json({ message: "Email not found" })
+        if (!result) return res.status(401).json({ message: "Email not found" })
         // compare passwords
         const isPasswordMatching = await bcrypt.compare(password, result.password)
         if (!isPasswordMatching) return res.status(401).json({ message: "Incorrect password" })
 
-        //TODO: set session
+        // const { password: p, ...user } = result
+        delete result.password
+        req.session.user = result
         return res.json({ message: "Logged in success" })
     })
 
@@ -35,7 +38,14 @@ auth.post("/login", (req, res) => {
 })
 
 // logout POST
+auth.post("/logout", authMiddleware, (req, res) => {
+    req.session.destroy()
+    res.json({ message: "You are logged out" })
+})
 
 // get current authenticated user GET
+auth.get("/user", authMiddleware, (req, res) => {
+    res.json(req.session.user)
+})
 
 module.exports = auth

@@ -3,6 +3,7 @@ const express = require("express")
 const morgan = require("morgan")
 const cors = require("cors")
 const auth = require("./routes/auth.routes")
+const session = require("express-session")
 
 // initialise express app
 const app = express()
@@ -11,6 +12,11 @@ const app = express()
 app.use(express.json())
 app.use(morgan("dev"))
 app.use(cors())
+app.use(session({
+    secret: "mysecret123",
+    resave: false,
+    saveUninitialized: false
+}))
 
 app.use(require("./routes/students.routes"))
 app.use("/auth", auth)
